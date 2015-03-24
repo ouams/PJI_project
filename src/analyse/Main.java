@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import cleaning.Cleaner;
 
@@ -20,7 +21,7 @@ public class Main {
 	 *            liste qui contiendra toute l'arborescence
 	 * @return la liste contenant tout les chemins de l'arborescence
 	 */
-	static ArrayList<String> listPath(File path, ArrayList<String> listFiles) {
+	static List<String> listPath(File path, List<String> listFiles) {
 		File files[];
 		indentLevel++;
 
@@ -47,14 +48,20 @@ public class Main {
 	 */
 	public static void main(String[] args) throws IOException {
 		final Cleaner cleaner = new Cleaner();
-		final ArrayList<String> arborescence = listPath(new File("cri"),
-				new ArrayList<String>());
-		for (int i = 0; i < arborescence.size(); i++) {
-			System.out.println("Fichier courrant: " + arborescence.get(i));
-			cleaner.process(arborescence.get(i));
-			TalkAnalyser.proccess(arborescence.get(i));
-			System.out.println("Terminé");
-		}
+		List<String> arborescence = new ArrayList<String>();
+		arborescence = listPath(new File("cri/"), arborescence);
+
+		/*
+		 * for (final String file : arborescence) {
+		 * System.out.println("Fichier courrant: " + file);
+		 * cleaner.process(file); TalkAnalyser.proccess(file);
+		 * System.out.println("Terminé"); }
+		 */
+		System.out.println("Fichier courrant: ");
+		cleaner.process("cri/14/2012-2013/ordinaire/fichiers/20130190.html");
+		TalkAnalyser
+		.proccess("cri/14/2012-2013/ordinaire/fichiers/20130190.html");
+		System.out.println("Terminé");
 
 	}
 }

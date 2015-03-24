@@ -56,6 +56,7 @@ public class CSVHandler {
 	 * @return
 	 */
 	public static List<String[]> read(String path) {
+
 		// Build reader instance
 		try {
 			final CSVReader reader = new CSVReader(new FileReader(path), ';',
