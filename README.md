@@ -52,6 +52,31 @@ Les sources sont organisées selon le schéma d'un projet SBT (Scala Build Tool)
         |_Cleaner.java
 ```
 
+Les données récupérees sont organisées comme suit :
+
+```
+|_data
+  |_legislature
+    |_année
+      |_type
+        |_fichiers
+          |_intervention
+          	 |_20130190.csv
+          	 .
+          	 .
+          	 .
+          |_reac
+          	|_20130190.csv
+          	 .
+          	 .
+          	 .
+          |_wordsCount
+          	|_20130190.csv
+          	 .
+          	 .
+          	 .
+```
+
 ##Utilisation
 
 L'execution des différentes fonctionnalités necessite Scala Build Tool (http://www.scala-sbt.org/).
