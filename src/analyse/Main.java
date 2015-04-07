@@ -51,17 +51,18 @@ public class Main {
 		List<String> arborescence = new ArrayList<String>();
 		arborescence = listPath(new File("cri/"), arborescence);
 
+		for (final String file : arborescence) {
+			System.out.println("Fichier courrant: " + file);
+			cleaner.process(file);
+			TalkAnalyser.proccess(file);
+			System.out.println("Terminé");
+		}
 		/*
-		 * for (final String file : arborescence) {
-		 * System.out.println("Fichier courrant: " + file);
-		 * cleaner.process(file); TalkAnalyser.proccess(file);
-		 * System.out.println("Terminé"); }
+		 * System.out.println("Fichier courrant: ");
+		 * cleaner.process("cri/14/2012-2013/ordinaire/fichiers/20130190.html");
+		 * TalkAnalyser
+		 * .proccess("cri/14/2012-2013/ordinaire/fichiers/20130190.html");
+		 * System.out.println("Terminé");
 		 */
-		System.out.println("Fichier courrant: ");
-		cleaner.process("cri/14/2012-2013/ordinaire/fichiers/20130190.html");
-		TalkAnalyser
-		.proccess("cri/14/2012-2013/ordinaire/fichiers/20130190.html");
-		System.out.println("Terminé");
-
 	}
 }

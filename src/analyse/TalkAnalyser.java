@@ -104,15 +104,12 @@ public class TalkAnalyser {
 			listParagraphe = doc.select("p:not(div#somjo p, .sompopup)");
 			String rowInterventions[] = new String[2];
 			String rowNbWords[] = new String[2];
-			System.out.println("ANCIENNNNNNNNNNNNNNNNNNNN");
 
 			for (final Element paragraphe : listParagraphe) {
 
 				if (paragraphe.hasText()) {
-					System.out.println("hastext");
 					// Récupération de l'intervenant si il y en a un
 					if (!paragraphe.select("a").isEmpty()) {
-						System.out.println("a");
 						this.motsByIntervenantsByIntervention.add(rowNbWords);
 						this.interventionsByIntervenants.add(rowInterventions);
 
@@ -124,9 +121,7 @@ public class TalkAnalyser {
 						paragraphe.select("a").remove();
 
 					} else if (!paragraphe.select("b").isEmpty()) {
-						System.out.println("b");
-						System.out.println("Ajouté :" + rowInterventions[0]
-								+ " " + rowInterventions[1]);
+
 						this.motsByIntervenantsByIntervention.add(rowNbWords);
 						this.interventionsByIntervenants.add(rowInterventions);
 						// Nouvelles lignes
@@ -149,9 +144,6 @@ public class TalkAnalyser {
 								+ this.countUtilWords(rowInterventions[1]);
 
 					}
-
-				} else {
-					System.out.println("vide");
 
 				}
 			}
@@ -202,7 +194,6 @@ public class TalkAnalyser {
 			}
 		}
 		System.out.println(this.interventionsByIntervenants.size());
-
 	}
 
 	private void computeDidascalies(String intervenant, Elements didascalies) {
@@ -211,7 +202,7 @@ public class TalkAnalyser {
 			final String rowReac[] = new String[2];
 			rowReac[0] = intervenant;
 			if (Pattern.matches("\\(([^\\)]+)\\)", reac.text())) {
-				rowReac[1] = reac.text().substring(1, reac.text().length() - 2);
+				rowReac[1] = reac.text().substring(1, reac.text().length() - 1);
 				this.reactionByIntervenant.add(rowReac);
 			}
 		}
