@@ -6,6 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -24,15 +25,14 @@ import csv.CSVHandler;
  */
 public class TalkAnalyser {
 	public List<String> intervenants;
-	public List<String[]> interventionsByIntervenants;
-	public List<String[]> motsByIntervenantsByIntervention;
-	public List<String[]> reactionByIntervenant;
+	public List<String[]> dataSeance;
+	public List<String> reacs;
+	public String president = "";
 
 	public TalkAnalyser() {
 		this.intervenants = new ArrayList<String>();
-		this.interventionsByIntervenants = new ArrayList<String[]>();
-		this.motsByIntervenantsByIntervention = new ArrayList<String[]>();
-		this.reactionByIntervenant = new ArrayList<String[]>();
+		this.dataSeance = new ArrayList<String[]>();
+
 	}
 
 	/**
@@ -42,7 +42,7 @@ public class TalkAnalyser {
 	 *            le chemin du fichier à lire
 	 * @return
 	 */
-	public String readFile(String filePath) {
+	public static String readFile(String filePath) {
 		try {
 			final BufferedReader br = new BufferedReader(new FileReader(
 					filePath));
@@ -93,119 +93,188 @@ public class TalkAnalyser {
 	public void GetData(String html) {
 		System.out.println("Récupération des interventions et réactions ...");
 		final Document doc = Jsoup.parse(html);
-		Elements listParagraphe = doc.select("div.intervention > p");
-		final int i = 0;
+		final Elements listParagraphe = doc.select("div.intervention > p");
+		final String date[] = { doc.select("title").text()
+				.substring(doc.select("title").text().indexOf("du") + 3) };
+		this.dataSeance.add(date);
+
+		// Récupération du nom du président
+		final Elements presidents = doc.select("p.sompresidence");
+		for (final Element president : presidents) {
+			this.president += president.text().substring(14) + " ";
+		}
 
 		/*
-		 * SI LES INTERVENTIONS NE final SONT PAS DANS final LES CLASS
-		 * "INTERVENTION" (ANNEE<(2012-2013))
+		 * SI LES INTERVENTIONS NE SONT PAS DANS final LES CLASS "INTERVENTION"
+		 * (ANNEE<(2012-2013))
 		 */
-		if (listParagraphe.isEmpty()) {
-			listParagraphe = doc.select("p:not(div#somjo p, .sompopup)");
-			String rowInterventions[] = new String[2];
-			String rowNbWords[] = new String[2];
+		if (!listParagraphe.isEmpty()) {
 
-			for (final Element paragraphe : listParagraphe) {
-
-				if (paragraphe.hasText()) {
-					// Récupération de l'intervenant si il y en a un
-					if (!paragraphe.select("a").isEmpty()) {
-						this.motsByIntervenantsByIntervention.add(rowNbWords);
-						this.interventionsByIntervenants.add(rowInterventions);
-
-						// Nouvelles lignes
-						rowInterventions = new String[2];
-						rowNbWords = new String[2];
-						rowInterventions[0] = rowNbWords[0] = paragraphe
-								.select("a").text();
-						paragraphe.select("a").remove();
-
-					} else if (!paragraphe.select("b").isEmpty()) {
-
-						this.motsByIntervenantsByIntervention.add(rowNbWords);
-						this.interventionsByIntervenants.add(rowInterventions);
-						// Nouvelles lignes
-						rowInterventions = new String[2];
-						rowNbWords = new String[2];
-						rowInterventions[0] = rowNbWords[0] = paragraphe
-								.select("b").text();
-						paragraphe.select("b").remove();
-					}
-					// Récupération de l'intervention
-					if (paragraphe.hasText()) {
-
-						rowInterventions[1] += " "
-								+ paragraphe
-										.text()
-										.substring(
-												paragraphe.text().indexOf(".") + 1)
-										.trim();
-						rowNbWords[1] = ""
-								+ this.countUtilWords(rowInterventions[1]);
-
-					}
-
-				}
-			}
-			this.motsByIntervenantsByIntervention.add(rowNbWords);
-			this.interventionsByIntervenants.add(rowInterventions);
+			this.processDivIntervention(listParagraphe);
 
 		} else {
-			/*
-			 * SI LES INTERVENTIONS SONT DANS LES CLASS "INTERVENTION"
-			 * (ANNEE>2012-2013)
-			 */
-			// Parcours des paragraphes contenant les interventions
-			for (final Element paragraphe : listParagraphe) {
-				final String rowInterventions[] = new String[2];
-				final String rowNbWords[] = new String[2];
-
-				// Si le nom d'un intervenant n'est pas cité avec un lien
-				if (!paragraphe.hasAttr("b")) {
-					rowNbWords[0] = rowInterventions[0] = paragraphe
-							.select("b").text();
-					// System.out.println(intervenant);
-					paragraphe.select("b").remove();
-				} else {
-					rowNbWords[0] = rowInterventions[0] = paragraphe.select(
-							"a[href^=/tribun/fiches_id/]").text();
-					paragraphe.select("a").remove();
-				}
-
-				// System.out.println("Intervenant : " + rowNbWords[0]);
-
-				// Traitement des didascalies
-				this.computeDidascalies(rowInterventions[0],
-						paragraphe.select("i"));
-				paragraphe.select("i").remove();
-
-				// Recupération de l'intervention contenu dans ce paragraphe
-				if (!paragraphe.text().isEmpty()) {
-					rowInterventions[1] = paragraphe.text()
-							.substring(paragraphe.text().indexOf(".") + 1)
-							.trim();
-					rowNbWords[1] = ""
-							+ this.countUtilWords(rowInterventions[1]);
-					// Ajout des infos dans les listes
-					this.motsByIntervenantsByIntervention.add(rowNbWords);
-					this.interventionsByIntervenants.add(rowInterventions);
-				}
-
-			}
+			this.processParagrapheOnly(doc);
 		}
-		System.out.println(this.interventionsByIntervenants.size());
 	}
 
-	private void computeDidascalies(String intervenant, Elements didascalies) {
+	private void processOrateur(Document doc) {
+		final Elements listParagraphe = doc
+				.select("p:not(div#somjo p, .sompopup)");
+		String rowData[] = { "", "", "", "" };
 
-		for (final Element reac : didascalies) {
-			final String rowReac[] = new String[2];
-			rowReac[0] = intervenant;
-			if (Pattern.matches("\\(([^\\)]+)\\)", reac.text())) {
-				rowReac[1] = reac.text().substring(1, reac.text().length() - 1);
-				this.reactionByIntervenant.add(rowReac);
+		for (final Element paragraphe : listParagraphe) {
+			System.out.println(paragraphe.hasAttr("orateur"));
+			if (paragraphe.hasAttr("orateur")) {
+				this.dataSeance.add(rowData);
+
+				// Nouvelles lignes
+				rowData = new String[4];
+				rowData[0] = paragraphe.select("orateur").text();
+				System.out.println(rowData[0]);
+			}
+
+			this.computeDidascalies(rowData, paragraphe.select("i"));
+
+			// Recupération de l'intervention contenu dans ce paragraphe
+			if (!paragraphe.text().isEmpty()) {
+				rowData[1] = ""
+						+ paragraphe.text()
+								.substring(paragraphe.text().indexOf(".") + 1)
+								.trim();
+				rowData[2] = "" + this.countUtilWords(rowData[1]);
+
+			}
+
+		}
+
+	}
+
+	private void processDivIntervention(final Elements listParagraphe) {
+
+		// Parcours des paragraphes contenant les interventions
+		for (final Element paragraphe : listParagraphe) {
+			final String rowData[] = new String[4];
+
+			// Si le nom d'un intervenant n'est pas cité avec un lien
+			if (!paragraphe.hasAttr("b")) {
+				rowData[0] = paragraphe.select("b").text();
+				// System.out.println(intervenant);
+				paragraphe.select("b").remove();
+			} else {
+				rowData[0] = paragraphe.select("a[href^=/tribun/fiches_id/]")
+						.text();
+				paragraphe.select("a").remove();
+			}
+
+			if (rowData[0].contains("président")
+					|| rowData[0].contains("présidente")) {
+				rowData[0] = this.president;
+			}
+
+			// Traitement des didascalies
+			this.computeDidascalies(rowData, paragraphe.select("i"));
+			paragraphe.select("i").remove();
+
+			// Recupération de l'intervention contenu dans ce paragraphe
+			if (!paragraphe.text().isEmpty()) {
+				rowData[1] = ""
+						+ paragraphe.text()
+								.substring(paragraphe.text().indexOf(".") + 1)
+								.trim();
+				rowData[2] = "" + this.countUtilWords(rowData[1]);
+				// Ajout des infos dans les listes
+				this.dataSeance.add(rowData);
 			}
 		}
+
+		System.out.println(this.dataSeance.size());
+	}
+
+	private void processParagrapheOnly(Document doc) {
+		final Elements listParagraphe = doc
+				.select("p:not(div#somjo p, .sompopup)");
+		String rowData[] = { "", "", "", "" };
+
+		for (final Element paragraphe : listParagraphe) {
+
+			if (paragraphe.text().toLowerCase().contains("présidence")
+					&& this.president.equals("")) {
+				this.president = paragraphe
+						.text()
+						.substring(
+								paragraphe.text().indexOf("présidence de") + 14)
+								.trim();
+			}
+
+			if (paragraphe.hasText()) {
+				// Récupération de l'intervenant si il y en a un
+				if (!paragraphe.select("a").isEmpty()
+						&& !paragraphe.select("a").hasAttr("name")) {
+					// On ajoute que si la ligne contient des informations
+					if (rowData[0].startsWith("M.")
+							|| rowData[0].startsWith("Mme")) {
+						this.dataSeance.add(rowData);
+					}
+
+					// Nouvelles lignes
+					rowData = new String[4];
+					rowData[0] = paragraphe.select("a").text();
+					paragraphe.select("a").remove();
+
+				} else if (!paragraphe.select("b").isEmpty()) {
+					if (rowData[0].startsWith("Mr.")
+							|| rowData[0].startsWith("Mme")) {
+						this.dataSeance.add(rowData);
+					}
+					// Nouvelles lignes
+					rowData = new String[4];
+					rowData[0] = paragraphe.select("b").text();
+					paragraphe.select("b").remove();
+
+				}
+
+				if (rowData[0].contains("président")
+						|| rowData[0].contains("présidente")) {
+					rowData[0] = this.president;
+
+				}
+				// Récupération de l'intervention
+				if (paragraphe.hasText()) {
+					// On gere les didascalies
+					this.computeDidascalies(rowData, paragraphe.select("i"));
+					// paragraphe.select("i").remove();
+
+					// Le reste de l'intervention
+					// System.out.println(paragraphe.text());
+
+					if (paragraphe.text().trim().startsWith(".")) {
+						rowData[1] += paragraphe.text().substring(1).trim();
+					} else {
+						rowData[1] += " " + paragraphe.text();
+					}
+
+					rowData[2] = "" + this.countUtilWords(rowData[1]);
+
+				}
+
+			}
+		}
+		this.dataSeance.add(rowData);
+	}
+
+	private void computeDidascalies(String[] rowData, Elements didascalies) {
+
+		// Pour chaque didascalie
+		for (final Element reac : didascalies) {
+			// On regarde si elle contient un des mots référence des réactions
+			for (final String element : this.reacs) {
+				if (reac.text().toLowerCase().contains(element)) {
+					rowData[3] = reac.text().substring(1,
+							reac.text().length() - 1);
+				}
+			}
+		}
+		didascalies.remove();
 	}
 
 	/**
@@ -227,6 +296,11 @@ public class TalkAnalyser {
 		return nbwords;
 	}
 
+	private void readReac() {
+		final String reactions = readFile("Reac.txt");
+		this.reacs = new ArrayList<String>(Arrays.asList(reactions.split(" ")));
+	}
+
 	/**
 	 * Procède à l'analyse et au stockages des informations d'une séance
 	 *
@@ -237,6 +311,7 @@ public class TalkAnalyser {
 	public static void proccess(String file) throws IOException {
 		final TalkAnalyser analyser = new TalkAnalyser();
 		final String textHtml = analyser.readFile(file);
+		analyser.readReac();
 		final String path = "data"
 				+ file.substring(file.indexOf("/"), file.lastIndexOf("/"))
 				+ "/";
@@ -245,23 +320,9 @@ public class TalkAnalyser {
 		analyser.GetData(textHtml);
 		System.out.println("Sauvegarde ...");
 		CSVHandler.saveAll(
-				analyser.interventionsByIntervenants,
+				analyser.dataSeance,
 				path
-						+ "interventions"
-						+ File.separator
-						+ file.substring(file.lastIndexOf("/"),
-								file.length() - 5) + ".csv");
-		CSVHandler.saveAll(
-				analyser.reactionByIntervenant,
-				path
-						+ "reac"
-						+ File.separator
-						+ file.substring(file.lastIndexOf("/"),
-								file.length() - 5) + ".csv");
-		CSVHandler.saveAll(
-				analyser.motsByIntervenantsByIntervention,
-				path
-						+ "wordsCount"
+						+ "infoSeance"
 						+ File.separator
 						+ file.substring(file.lastIndexOf("/"),
 								file.length() - 5) + ".csv");

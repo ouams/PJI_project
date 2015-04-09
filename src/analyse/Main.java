@@ -48,20 +48,24 @@ public class Main {
 	 */
 	public static void main(String[] args) throws IOException {
 		final Cleaner cleaner = new Cleaner();
+
 		List<String> arborescence = new ArrayList<String>();
 		arborescence = listPath(new File("cri/"), arborescence);
 
-		for (final String file : arborescence) {
-			System.out.println("Fichier courrant: " + file);
-			cleaner.process(file);
-			TalkAnalyser.proccess(file);
+		for (int i = 0; i < arborescence.size(); i++) {
+			System.out.println("Fichier courrant: " + arborescence.get(i));
+			cleaner.process(arborescence.get(i));
+			TalkAnalyser.proccess(arborescence.get(i));
+			System.out.println("Fichiers restants : "
+					+ (arborescence.size() - i));
 			System.out.println("Terminé");
 		}
+
 		/*
 		 * System.out.println("Fichier courrant: ");
-		 * cleaner.process("cri/14/2012-2013/ordinaire/fichiers/20130190.html");
+		 * cleaner.process("cri/14/2014-2015/ordinaire/fichiers/20150001.html");
 		 * TalkAnalyser
-		 * .proccess("cri/14/2012-2013/ordinaire/fichiers/20130190.html");
+		 * .proccess("cri/14/2014-2015/ordinaire/fichiers/20150001.html");
 		 * System.out.println("Terminé");
 		 */
 	}
