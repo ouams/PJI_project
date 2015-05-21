@@ -2,6 +2,13 @@
 import sys.process._
 import java.net.URL
 import java.io.File
+import java.io.OutputStreamWriter
+import java.io.FileOutputStream
+import java.io.BufferedWriter
+import java.io.InputStreamReader
+import org.mozilla.universalchardet.UniversalDetector;
+import java.util.Scanner
+
 
 /**
  * Object to download a Html from the french National Assembly website :
@@ -40,28 +47,67 @@ import java.io.File
    *          URL of the Html
    */
    def downloadHTML(url: String): Unit = {
-   	val name = url.substring((url lastIndexOf '/') + 1, (url indexOf ".asp")) + ".html"  
+    val htmlURL = new URL(url)
+    var encoding = getEncoding(htmlURL)
+    //Verification de l'encoding
+   	val name = url.substring((url lastIndexOf '/') + 1, (url indexOf ".asp")) +"_"+encoding+ ".html"  
    	val path = this.htmlFilePath(url)
    	val pathDirs = new File(path)
-   	val htmlURL = new URL(url)
    	val check = new File(path + name)
+    val inStream =  htmlURL.openStream()
 
-   	if(!check.exists){
-   		if (htmlURL.openConnection.getContentLength != -1) {
-   			if (!pathDirs.exists)
-   			pathDirs.mkdirs
+    
+    
 
-   			htmlURL #> new File(path + name) !!
-   		}
-   	}
-   }
+    if(htmlURL.openConnection.getContentLength != -1){
+      if(!check.exists){
+        if (!pathDirs.exists){
+          pathDirs.mkdirs
+        }
+
+        val sc = new Scanner(inStream, encoding)
+        val out =  new BufferedWriter(new OutputStreamWriter(new FileOutputStream(path + name), encoding))
+
+        while(sc.hasNextLine()){
+          out.write(sc.nextLine())
+        }
+        inStream.close()
+       sc.close
+        out.close()
+      }
+    } 
+    
+  }
+
+  private def getEncoding(url: URL): String= {
+    val buf = new Array[Byte](1024) 
+    val detector = new UniversalDetector(null)
+    val inStream =  url.openStream()
+
+    var nread = inStream.read(buf)
+    while (nread > 0 && !detector.isDone()) {
+      detector.handleData(buf, 0, nread);
+      nread = inStream.read(buf)
+    }
+    inStream.close()
+    detector.dataEnd();
+
+    val encoding = detector.getDetectedCharset();
+    if (encoding != null) {
+      encoding
+      } else{
+        "UTF-8"
+      }
+
+    }
 
 
-// Downloads the Html pointed bu the URL and print a trace
-private def printAndDownload(htmlURL: String): Unit = {
-	this.downloadHTML(htmlURL)
-	println("Downloaded : " + htmlURL)
-}
+
+  // Downloads the Html pointed bu the URL and print a trace
+  private def printAndDownload(htmlURL: String): Unit = {
+   this.downloadHTML(htmlURL)
+   println("Downloaded : " + htmlURL)
+ }
 
    /**
    * Dowloads all the Html
@@ -79,4 +125,4 @@ private def printAndDownload(htmlURL: String): Unit = {
 
 
 
-}
+ }

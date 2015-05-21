@@ -12,7 +12,7 @@ import scala.io.Source
 
 
   // URLs of the sessions pages
-  private val indexes = for (leg <- 13 to 14) yield (this.prefix + "/" + leg + "/debats/index.asp")
+  private val indexes = for (leg <- 12 to 12) yield (this.prefix + "/" + leg + "/debats/index.asp")
 
 
   // Loads the HTML page pointed by the URL in a string
@@ -34,12 +34,14 @@ private def catchURL(
 
   // Isolates a session URL
   private def catchSessionURL(ann: Int, line: String): String ={
+    var res = ""
     if(ann == 14){
-      println(line)
-      line.substring((line indexOf "href=\"") + 6, (line indexOf "Voir tous les") - 2)
-      }else{
-        line.substring((line indexOf "href=\"") + 6, (line indexOf "Compte rendu int&eacute;gral") - 2)
+      res = line.substring((line indexOf "href=\"") + 6, (line indexOf "Voir tous les") - 2)
+      }else if(!line.contains("plf")){
+        //Ne prend pas en compte les commissions élargies
+          res = line.substring((line indexOf "href=\"") + 6, (line indexOf "Compte rendu int&eacute;gral") - 2)
       }
+      res
     }
 
 
@@ -54,7 +56,7 @@ private def sessionsURL(index: String): List[String] = {
 
   this.catchURL(
     index,
-    {x: String => (x contains "\">Compte rendu int&eacute;gral") || (x contains "\">Voir tous les")}, 
+    {x: String => (x contains "/\">Compte rendu int&eacute;gral") || (x contains "\">Voir tous les")}, 
     {x: String => this.prefix + this.catchSessionURL(ann, x)})
 }
 

@@ -6,8 +6,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import cleaning.Cleaner;
-
 public class Main {
 
 	static int indentLevel = -1;
@@ -47,15 +45,13 @@ public class Main {
 	 * @throws IOException
 	 */
 	public static void main(String[] args) throws IOException {
-		final Cleaner cleaner = new Cleaner();
-
+		final TalkAnalyser analyser = new TalkAnalyser();
 		List<String> arborescence = new ArrayList<String>();
 		arborescence = listPath(new File("cri/"), arborescence);
 
 		for (int i = 0; i < arborescence.size(); i++) {
 			System.out.println("Fichier courrant: " + arborescence.get(i));
-			cleaner.process(arborescence.get(i));
-			TalkAnalyser.proccess(arborescence.get(i));
+			analyser.proccess(arborescence.get(i));
 			System.out.println("Fichiers restants : "
 					+ (arborescence.size() - i));
 			System.out.println("Terminé");
@@ -63,9 +59,8 @@ public class Main {
 
 		/*
 		 * System.out.println("Fichier courrant: ");
-		 * cleaner.process("cri/14/2014-2015/ordinaire/fichiers/20150001.html");
-		 * TalkAnalyser
-		 * .proccess("cri/14/2014-2015/ordinaire/fichiers/20150001.html");
+		 * cleaner.process("cri/20130286.html");
+		 * analyser.proccess("cri/20130286.html");
 		 * System.out.println("Terminé");
 		 */
 	}

@@ -1,10 +1,10 @@
 package cleaning;
 
+import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
+import java.io.OutputStreamWriter;
 
 import org.htmlcleaner.CleanerProperties;
 import org.htmlcleaner.HtmlCleaner;
@@ -23,18 +23,19 @@ public class Cleaner {
 	 *
 	 * @param filepath
 	 *            chemin vers le fichier html
+	 * @param charset
 	 * @return une chaine de caractere contenant le html propre
 	 */
-	public String clean(String filepath) {
+	public String clean(String filepath, String charset) {
 		System.out.println("Netoyage du fichier ...");
 		final HtmlCleaner clean = new HtmlCleaner();
 		clean.getProperties();
 		TagNode node = null;
 		try {
-			node = clean.clean(new File(filepath));
+			node = clean.clean(new File(filepath), charset);
 		} catch (final IOException e) {
 			System.out
-			.println("Erreur : une erreur est survenue lors du nettoyage du fichier");
+					.println("Erreur : une erreur est survenue lors du nettoyage du fichier");
 		}
 		clean.getInnerHtml(node);
 
@@ -51,29 +52,30 @@ public class Cleaner {
 
 	/**
 	 * Sauvegarde le nouveau html propre au même endroit
-	 * 
+	 *
 	 * @param filepath
 	 *            le chemin vers le fichier html
 	 * @param content
 	 *            le nouveau contenu html du fichier
 	 */
-	public void save(String filepath, String content) {
+	public void save(String filepath, String content, String charset) {
 		System.out.println("Sauvegarde du fichier ...");
-		PrintWriter writer;
+		BufferedWriter writer;
 		try {
-			writer = new PrintWriter(filepath, "UTF-8");
-			writer.print(content);
+			writer = new BufferedWriter(new OutputStreamWriter(
+					new FileOutputStream(filepath), charset));
+			writer.write(content);
 			writer.close();
-		} catch (FileNotFoundException | UnsupportedEncodingException e) {
+		} catch (final IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
 	}
 
-	public void process(String file) {
-		final String cleanfile = this.clean(file);
-		this.save(file, cleanfile);
+	public void process(String file, String charset) {
+		final String cleanfile = this.clean(file, charset);
+		this.save(file, cleanfile, charset);
 	}
 
 }

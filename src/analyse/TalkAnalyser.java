@@ -2,9 +2,10 @@ package analyse;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -15,6 +16,8 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import util.DateHandler;
+import cleaning.Cleaner;
 import csv.CSVHandler;
 
 /**
@@ -27,12 +30,13 @@ public class TalkAnalyser {
 	public List<String> intervenants;
 	public List<String[]> dataSeance;
 	public List<String> reacs;
-	public String president = "";
+	private String president = "";
+	private String date;
+	static String charset;
 
 	public TalkAnalyser() {
 		this.intervenants = new ArrayList<String>();
 		this.dataSeance = new ArrayList<String[]>();
-
 	}
 
 	/**
@@ -42,10 +46,11 @@ public class TalkAnalyser {
 	 *            le chemin du fichier à lire
 	 * @return
 	 */
-	public static String readFile(String filePath) {
+	public String readFile(String filePath) {
 		try {
-			final BufferedReader br = new BufferedReader(new FileReader(
-					filePath));
+
+			final BufferedReader br = new BufferedReader(new InputStreamReader(
+					new FileInputStream(filePath), charset));
 			final StringBuilder sb = new StringBuilder();
 			String line = br.readLine();
 
@@ -68,35 +73,18 @@ public class TalkAnalyser {
 	}
 
 	/**
-	 * Recupere la liste des intervenant de la seance
-	 *
-	 * @param html
-	 *            le contenu html de la séance
-	 */
-	public void setIntervenantsList(String html) {
-		final Document doc = Jsoup.parse(html);
-		final Elements intervenants = doc.select("a[href^=/tribun/fiches_id/]");
-
-		for (final Element intervenant : intervenants) {
-			if (!this.intervenants.contains(intervenant.text())) {
-				this.intervenants.add(intervenant.text());
-			}
-		}
-	}
-
-	/**
 	 * Analyse le contenu html d'une session
 	 *
 	 * @param html
 	 *            le texte html de la session à analyser
 	 */
 	public void GetData(String html) {
+
 		System.out.println("Récupération des interventions et réactions ...");
 		final Document doc = Jsoup.parse(html);
 		final Elements listParagraphe = doc.select("div.intervention > p");
-		final String date[] = { doc.select("title").text()
-				.substring(doc.select("title").text().indexOf("du") + 3) };
-		this.dataSeance.add(date);
+		this.date = DateHandler.dateConverter(doc.select("title").text()
+				.substring(doc.select("title").text().indexOf("du") + 3));
 
 		// Récupération du nom du président
 		final Elements presidents = doc.select("p.sompresidence");
@@ -104,31 +92,33 @@ public class TalkAnalyser {
 			this.president += president.text().substring(14) + " ";
 		}
 
+		final String president[] = { "Présidence de " + this.president };
+		this.dataSeance.add(president);
 		/*
 		 * SI LES INTERVENTIONS NE SONT PAS DANS final LES CLASS "INTERVENTION"
 		 * (ANNEE<(2012-2013))
 		 */
 		if (!listParagraphe.isEmpty()) {
-
 			this.processDivIntervention(listParagraphe);
-
 		} else {
 			this.processParagrapheOnly(doc);
 		}
 	}
 
+	@SuppressWarnings("unused")
 	private void processOrateur(Document doc) {
 		final Elements listParagraphe = doc
 				.select("p:not(div#somjo p, .sompopup)");
-		String rowData[] = { "", "", "", "" };
+		String rowData[] = { "", "", "", "", "" };
 
 		for (final Element paragraphe : listParagraphe) {
 			System.out.println(paragraphe.hasAttr("orateur"));
 			if (paragraphe.hasAttr("orateur")) {
+				rowData[4] = this.date;
 				this.dataSeance.add(rowData);
 
 				// Nouvelles lignes
-				rowData = new String[4];
+				rowData = new String[5];
 				rowData[0] = paragraphe.select("orateur").text();
 				System.out.println(rowData[0]);
 			}
@@ -139,8 +129,8 @@ public class TalkAnalyser {
 			if (!paragraphe.text().isEmpty()) {
 				rowData[1] = ""
 						+ paragraphe.text()
-								.substring(paragraphe.text().indexOf(".") + 1)
-								.trim();
+						.substring(paragraphe.text().indexOf(".") + 1)
+						.trim();
 				rowData[2] = "" + this.countUtilWords(rowData[1]);
 
 			}
@@ -153,7 +143,7 @@ public class TalkAnalyser {
 
 		// Parcours des paragraphes contenant les interventions
 		for (final Element paragraphe : listParagraphe) {
-			final String rowData[] = new String[4];
+			final String rowData[] = new String[5];
 
 			// Si le nom d'un intervenant n'est pas cité avec un lien
 			if (!paragraphe.hasAttr("b")) {
@@ -179,10 +169,11 @@ public class TalkAnalyser {
 			if (!paragraphe.text().isEmpty()) {
 				rowData[1] = ""
 						+ paragraphe.text()
-								.substring(paragraphe.text().indexOf(".") + 1)
-								.trim();
+						.substring(paragraphe.text().indexOf(".") + 1)
+						.trim();
 				rowData[2] = "" + this.countUtilWords(rowData[1]);
-				// Ajout des infos dans les listes
+				// Ajout de la date puis des infos dans les listes
+				rowData[4] = this.date;
 				this.dataSeance.add(rowData);
 			}
 		}
@@ -193,7 +184,7 @@ public class TalkAnalyser {
 	private void processParagrapheOnly(Document doc) {
 		final Elements listParagraphe = doc
 				.select("p:not(div#somjo p, .sompopup)");
-		String rowData[] = { "", "", "", "" };
+		String rowData[] = { "", "", "", "", "" };
 
 		for (final Element paragraphe : listParagraphe) {
 
@@ -213,21 +204,25 @@ public class TalkAnalyser {
 					// On ajoute que si la ligne contient des informations
 					if (rowData[0].startsWith("M.")
 							|| rowData[0].startsWith("Mme")) {
+						rowData[4] = this.date;
 						this.dataSeance.add(rowData);
 					}
 
 					// Nouvelles lignes
-					rowData = new String[4];
+					rowData = new String[5];
+					rowData[1] = "";
 					rowData[0] = paragraphe.select("a").text();
 					paragraphe.select("a").remove();
 
 				} else if (!paragraphe.select("b").isEmpty()) {
 					if (rowData[0].startsWith("Mr.")
 							|| rowData[0].startsWith("Mme")) {
+						rowData[4] = this.date;
 						this.dataSeance.add(rowData);
 					}
 					// Nouvelles lignes
-					rowData = new String[4];
+					rowData = new String[5];
+					rowData[1] = "";
 					rowData[0] = paragraphe.select("b").text();
 					paragraphe.select("b").remove();
 
@@ -248,17 +243,19 @@ public class TalkAnalyser {
 					// System.out.println(paragraphe.text());
 
 					if (paragraphe.text().trim().startsWith(".")) {
-						rowData[1] += paragraphe.text().substring(1).trim();
+						rowData[1] += ""
+								+ paragraphe.text().substring(1).trim();
 					} else {
-						rowData[1] += " " + paragraphe.text();
+						rowData[1] += "" + paragraphe.text();
 					}
-
+					System.out.println(rowData[1]);
 					rowData[2] = "" + this.countUtilWords(rowData[1]);
 
 				}
 
 			}
 		}
+		rowData[4] = this.date;
 		this.dataSeance.add(rowData);
 	}
 
@@ -297,7 +294,7 @@ public class TalkAnalyser {
 	}
 
 	private void readReac() {
-		final String reactions = readFile("Reac.txt");
+		final String reactions = this.readFile("Reac.txt");
 		this.reacs = new ArrayList<String>(Arrays.asList(reactions.split(" ")));
 	}
 
@@ -308,8 +305,16 @@ public class TalkAnalyser {
 	 *            le chemin du fichier html de la séance à analyser
 	 * @throws IOException
 	 */
-	public static void proccess(String file) throws IOException {
+	public void proccess(String file) throws IOException {
+		final Cleaner cleaner = new Cleaner();
 		final TalkAnalyser analyser = new TalkAnalyser();
+
+		// On récupère l'encodage
+		charset = file.split("_")[1];
+
+		charset = charset.split("\\.")[0];
+		cleaner.process(file, charset);
+
 		final String textHtml = analyser.readFile(file);
 		analyser.readReac();
 		final String path = "data"
@@ -322,10 +327,10 @@ public class TalkAnalyser {
 		CSVHandler.saveAll(
 				analyser.dataSeance,
 				path
-						+ "infoSeance"
-						+ File.separator
-						+ file.substring(file.lastIndexOf("/"),
-								file.length() - 5) + ".csv");
+				+ "infoSeance"
+				+ File.separator
+				+ file.substring(file.lastIndexOf("/"),
+						file.length() - 5) + ".csv", charset);
 
 	}
 }

@@ -4,6 +4,15 @@
 
 - Ouamar SAIS
 
+##Contenu de l’archive
+L’archive contient:
+- le code source scala et java  
+- les librairie utilisées  
+- quelque fichiers d’exemple de résultats dans le dossier data_result  
+- les fichiers Mois.csv et Reac.txt qui sont utilise pour le déroulement du programme
+- un script bash qui permet d’inclure l’encoding dans le nom des fichier html téléchargé 
+
+
 ##Description
 
 Le projet consiste à extraire du html des comptes rendus intégraux de l'Assemblée Nationale française des données concernant les prises de paroles, des intervenant, et aussi des humeurs (réactions aux interventions) qui y sont effectués. Les informations récupérées seront ensuite nettoyées, et organisées dans une ou plusieurs bases de données.
