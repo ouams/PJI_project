@@ -7,7 +7,6 @@ import csv.CSVHandler;
 public class DateHandler {
 
 	public static String dateConverter(String date) {
-		final String datefinal;
 		final List<String[]> listMois = CSVHandler.read("Mois.csv", ',',
 				"UTF-8");
 		System.out.println(date);

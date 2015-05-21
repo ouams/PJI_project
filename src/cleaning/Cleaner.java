@@ -73,6 +73,14 @@ public class Cleaner {
 
 	}
 
+	/**
+	 * Methode qui va nettoyer et sauvegarder le fichier passé en parametre
+	 * 
+	 * @param file
+	 *            le fichier à nettoyer
+	 * @param charset
+	 *            l'encodage du fichier
+	 */
 	public void process(String file, String charset) {
 		final String cleanfile = this.clean(file, charset);
 		this.save(file, cleanfile, charset);

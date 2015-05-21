@@ -27,15 +27,31 @@ import csv.CSVHandler;
  * @author sais
  */
 public class TalkAnalyser {
-	public List<String> intervenants;
+	/**
+	 * Liste qui contient chaque intervention de la séance
+	 */
 	public List<String[]> dataSeance;
+	/**
+	 * Liste qui contient les mot clés pour les réactions
+	 */
 	public List<String> reacs;
+	/**
+	 * String qui contient le président de la séance
+	 */
 	private String president = "";
+	/**
+	 * String qui contient la date de la séance
+	 */
 	private String date;
+	/**
+	 * Encodage du fichier analysé
+	 */
 	static String charset;
 
+	/**
+	 * Création d'un nouvel objet d'Analyse
+	 */
 	public TalkAnalyser() {
-		this.intervenants = new ArrayList<String>();
 		this.dataSeance = new ArrayList<String[]>();
 	}
 
@@ -44,7 +60,7 @@ public class TalkAnalyser {
 	 *
 	 * @param filePath
 	 *            le chemin du fichier à lire
-	 * @return
+	 * @return une chaine de caractere contenant tout le contenu du fichier
 	 */
 	public String readFile(String filePath) {
 		try {
@@ -82,7 +98,8 @@ public class TalkAnalyser {
 
 		System.out.println("Récupération des interventions et réactions ...");
 		final Document doc = Jsoup.parse(html);
-		final Elements listParagraphe = doc.select("div.intervention > p");
+		final Elements listParagraphe = doc
+				.select("div.Point > p, div.intervention > p");
 		this.date = DateHandler.dateConverter(doc.select("title").text()
 				.substring(doc.select("title").text().indexOf("du") + 3));
 
@@ -105,42 +122,7 @@ public class TalkAnalyser {
 		}
 	}
 
-	@SuppressWarnings("unused")
-	private void processOrateur(Document doc) {
-		final Elements listParagraphe = doc
-				.select("p:not(div#somjo p, .sompopup)");
-		String rowData[] = { "", "", "", "", "" };
-
-		for (final Element paragraphe : listParagraphe) {
-			System.out.println(paragraphe.hasAttr("orateur"));
-			if (paragraphe.hasAttr("orateur")) {
-				rowData[4] = this.date;
-				this.dataSeance.add(rowData);
-
-				// Nouvelles lignes
-				rowData = new String[5];
-				rowData[0] = paragraphe.select("orateur").text();
-				System.out.println(rowData[0]);
-			}
-
-			this.computeDidascalies(rowData, paragraphe.select("i"));
-
-			// Recupération de l'intervention contenu dans ce paragraphe
-			if (!paragraphe.text().isEmpty()) {
-				rowData[1] = ""
-						+ paragraphe.text()
-						.substring(paragraphe.text().indexOf(".") + 1)
-						.trim();
-				rowData[2] = "" + this.countUtilWords(rowData[1]);
-
-			}
-
-		}
-
-	}
-
 	private void processDivIntervention(final Elements listParagraphe) {
-
 		// Parcours des paragraphes contenant les interventions
 		for (final Element paragraphe : listParagraphe) {
 			final String rowData[] = new String[5];
@@ -155,7 +137,7 @@ public class TalkAnalyser {
 						.text();
 				paragraphe.select("a").remove();
 			}
-
+			// Sil'intervenant récupéré est le président/présidente
 			if (rowData[0].contains("président")
 					|| rowData[0].contains("présidente")) {
 				rowData[0] = this.president;
@@ -169,16 +151,14 @@ public class TalkAnalyser {
 			if (!paragraphe.text().isEmpty()) {
 				rowData[1] = ""
 						+ paragraphe.text()
-						.substring(paragraphe.text().indexOf(".") + 1)
-						.trim();
+								.substring(paragraphe.text().indexOf(".") + 1)
+								.trim();
 				rowData[2] = "" + this.countUtilWords(rowData[1]);
 				// Ajout de la date puis des infos dans les listes
 				rowData[4] = this.date;
 				this.dataSeance.add(rowData);
 			}
 		}
-
-		System.out.println(this.dataSeance.size());
 	}
 
 	private void processParagrapheOnly(Document doc) {
@@ -194,7 +174,7 @@ public class TalkAnalyser {
 						.text()
 						.substring(
 								paragraphe.text().indexOf("présidence de") + 14)
-								.trim();
+						.trim();
 			}
 
 			if (paragraphe.hasText()) {
@@ -248,7 +228,6 @@ public class TalkAnalyser {
 					} else {
 						rowData[1] += "" + paragraphe.text();
 					}
-					System.out.println(rowData[1]);
 					rowData[2] = "" + this.countUtilWords(rowData[1]);
 
 				}
@@ -311,26 +290,36 @@ public class TalkAnalyser {
 
 		// On récupère l'encodage
 		charset = file.split("_")[1];
-
 		charset = charset.split("\\.")[0];
+
+		// on nettoie le fichier, de manière visuelle
 		cleaner.process(file, charset);
 
+		// On lit le fichier nettoyé
 		final String textHtml = analyser.readFile(file);
+		// On lit le fichier qui va permettre de gerer les réactions
 		analyser.readReac();
+
+		// Création du chemin pour l'enregistrement des informations récupérées
 		final String path = "data"
 				+ file.substring(file.indexOf("/"), file.lastIndexOf("/"))
 				+ "/";
 
 		System.out.println("Récupération des informations ...");
+
+		// Lancement de l'analyse des données
 		analyser.GetData(textHtml);
+
 		System.out.println("Sauvegarde ...");
+
+		// Sauvegarde des données récupérées
 		CSVHandler.saveAll(
 				analyser.dataSeance,
 				path
-				+ "infoSeance"
-				+ File.separator
-				+ file.substring(file.lastIndexOf("/"),
-						file.length() - 5) + ".csv", charset);
+						+ "infoSeance"
+						+ File.separator
+						+ file.substring(file.lastIndexOf("/"),
+								file.length() - 5) + ".csv", charset);
 
 	}
 }

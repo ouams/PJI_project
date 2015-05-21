@@ -55,7 +55,6 @@ import java.util.Scanner
    	val pathDirs = new File(path)
    	val check = new File(path + name)
     val inStream =  htmlURL.openStream()
-
     
     
 
@@ -69,8 +68,9 @@ import java.util.Scanner
         val out =  new BufferedWriter(new OutputStreamWriter(new FileOutputStream(path + name), encoding))
 
         while(sc.hasNextLine()){
-          out.write(sc.nextLine())
+          out.write(sc.nextLine()+"\n")
         }
+
         inStream.close()
        sc.close
         out.close()

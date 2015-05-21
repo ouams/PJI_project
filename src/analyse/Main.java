@@ -39,7 +39,7 @@ public class Main {
 
 	/**
 	 * Main du projet qui va nettoyer, analyser puis sauvegarder tout les
-	 * fichiers de l'arborescence
+	 * fichiers de l'arborescence du dossier "cri/"
 	 *
 	 * @param args
 	 * @throws IOException
@@ -56,12 +56,5 @@ public class Main {
 					+ (arborescence.size() - i));
 			System.out.println("Terminé");
 		}
-
-		/*
-		 * System.out.println("Fichier courrant: ");
-		 * cleaner.process("cri/20130286.html");
-		 * analyser.proccess("cri/20130286.html");
-		 * System.out.println("Terminé");
-		 */
 	}
 }
