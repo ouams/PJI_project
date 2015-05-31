@@ -1,7 +1,6 @@
 package analyse;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -17,8 +16,6 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import util.DateHandler;
-import cleaning.Cleaner;
-import csv.CSVHandler;
 
 /**
  * Classe qui va analyser les différentes prises de paroles et classer les
@@ -38,7 +35,7 @@ public class TalkAnalyser {
 	/**
 	 * String qui contient le président de la séance
 	 */
-	private String president = "";
+	private String president;
 	/**
 	 * String qui contient la date de la séance
 	 */
@@ -53,6 +50,7 @@ public class TalkAnalyser {
 	 */
 	public TalkAnalyser() {
 		this.dataSeance = new ArrayList<String[]>();
+		this.president = "";
 	}
 
 	/**
@@ -88,6 +86,15 @@ public class TalkAnalyser {
 		return null;
 	}
 
+	public void setCharset(String file) {
+		charset = file.split("_")[1];
+		charset = charset.split("\\.")[0];
+	}
+
+	public String getCharset() {
+		return charset;
+	}
+
 	/**
 	 * Analyse le contenu html d'une session
 	 *
@@ -103,26 +110,37 @@ public class TalkAnalyser {
 		this.date = DateHandler.dateConverter(doc.select("title").text()
 				.substring(doc.select("title").text().indexOf("du") + 3));
 
-		// Récupération du nom du président
-		final Elements presidents = doc.select("p.sompresidence");
-		for (final Element president : presidents) {
-			this.president += president.text().substring(14) + " ";
-		}
-
-		final String president[] = { "Présidence de " + this.president };
-		this.dataSeance.add(president);
 		/*
 		 * SI LES INTERVENTIONS NE SONT PAS DANS final LES CLASS "INTERVENTION"
 		 * (ANNEE<(2012-2013))
 		 */
 		if (!listParagraphe.isEmpty()) {
-			this.processDivIntervention(listParagraphe);
+			this.processDivIntervention(doc, listParagraphe);
 		} else {
 			this.processParagrapheOnly(doc);
 		}
 	}
 
-	private void processDivIntervention(final Elements listParagraphe) {
+	/**
+	 * Méthode qui se charge de la récupération des données pour les fichier les
+	 * plus récents
+	 *
+	 * @param listParagraphe
+	 *            la liste des paragraphes récupérés
+	 */
+	private void processDivIntervention(Document doc,
+			final Elements listParagraphe) {
+		// Récupération du nom du président
+		final Elements presidents = doc.select("p.sompresidence");
+		for (final Element president : presidents) {
+			this.president += " "
+					+ president.text().substring(14)
+							.replaceAll("[:punct:]", "");
+		}
+
+		final String president[] = { "Présidence de" + this.president };
+		this.dataSeance.add(president);
+
 		// Parcours des paragraphes contenant les interventions
 		for (final Element paragraphe : listParagraphe) {
 			final String rowData[] = new String[5];
@@ -138,8 +156,8 @@ public class TalkAnalyser {
 				paragraphe.select("a").remove();
 			}
 			// Sil'intervenant récupéré est le président/présidente
-			if (rowData[0].contains("président")
-					|| rowData[0].contains("présidente")) {
+			if (rowData[0].toLowerCase().contains("président")
+					|| rowData[0].toLowerCase().contains("présidente")) {
 				rowData[0] = this.president;
 			}
 
@@ -161,21 +179,46 @@ public class TalkAnalyser {
 		}
 	}
 
+	/**
+	 * Méthode qui se charge de récuperer des données sur les fichiers les plus
+	 * anciens
+	 *
+	 * @param doc
+	 *            Le document à analyser
+	 */
 	private void processParagrapheOnly(Document doc) {
 		final Elements listParagraphe = doc
-				.select("p:not(div#somjo p, .sompopup)");
+				.select("p:not(.sommaigre, .sommaigreliste)");
 		String rowData[] = { "", "", "", "", "" };
+		final Elements presidence = doc
+				.select("h5.presidence, p.sompresidence");
+		// Récupération du président
+		for (final Element element : presidence) {
+			if (element.text().toUpperCase().contains("PRÉSIDENCE DE")) {
+				if (!this.president
+						.equals(" "
+								+ element
+								.text()
+								.substring(
+										element.text().indexOf(
+												"PRÉSIDENCE DE") + 14)
+												.trim().replaceAll(",", ""))) {
+
+					this.president += " "
+							+ element
+							.text()
+							.substring(
+									element.text().indexOf(
+											"PRÉSIDENCE DE") + 14)
+											.trim().replaceAll(",", "");
+				}
+			}
+		}
+
+		final String president[] = { "Présidence de" + this.president };
+		this.dataSeance.add(president);
 
 		for (final Element paragraphe : listParagraphe) {
-
-			if (paragraphe.text().toLowerCase().contains("présidence")
-					&& this.president.equals("")) {
-				this.president = paragraphe
-						.text()
-						.substring(
-								paragraphe.text().indexOf("présidence de") + 14)
-						.trim();
-			}
 
 			if (paragraphe.hasText()) {
 				// Récupération de l'intervenant si il y en a un
@@ -195,8 +238,10 @@ public class TalkAnalyser {
 					paragraphe.select("a").remove();
 
 				} else if (!paragraphe.select("b").isEmpty()) {
-					if (rowData[0].startsWith("Mr.")
-							|| rowData[0].startsWith("Mme")) {
+					if (rowData[0].startsWith("M.")
+							|| rowData[0].startsWith("Mme")
+							|| rowData[0].startsWith(" Mme")
+							|| rowData[0].startsWith("M.")) {
 						rowData[4] = this.date;
 						this.dataSeance.add(rowData);
 					}
@@ -210,8 +255,7 @@ public class TalkAnalyser {
 
 				if (rowData[0].contains("président")
 						|| rowData[0].contains("présidente")) {
-					rowData[0] = this.president;
-
+					rowData[0] = this.president.trim();
 				}
 				// Récupération de l'intervention
 				if (paragraphe.hasText()) {
@@ -238,6 +282,15 @@ public class TalkAnalyser {
 		this.dataSeance.add(rowData);
 	}
 
+	/**
+	 * Méthode qui se charge de gerer les didascalies en récupérant celles qui
+	 * concernent une réaction uniquement
+	 *
+	 * @param rowData
+	 *            le tableau qui contient les données récupérée
+	 * @param didascalies
+	 *            la didascalie à analyser
+	 */
 	private void computeDidascalies(String[] rowData, Elements didascalies) {
 
 		// Pour chaque didascalie
@@ -272,54 +325,13 @@ public class TalkAnalyser {
 		return nbwords;
 	}
 
-	private void readReac() {
+	/**
+	 * Méthode qui lit et stocke le fichier contenant les mots clés des
+	 * réactions
+	 */
+	protected void readReac() {
 		final String reactions = this.readFile("Reac.txt");
 		this.reacs = new ArrayList<String>(Arrays.asList(reactions.split(" ")));
 	}
 
-	/**
-	 * Procède à l'analyse et au stockages des informations d'une séance
-	 *
-	 * @param file
-	 *            le chemin du fichier html de la séance à analyser
-	 * @throws IOException
-	 */
-	public void proccess(String file) throws IOException {
-		final Cleaner cleaner = new Cleaner();
-		final TalkAnalyser analyser = new TalkAnalyser();
-
-		// On récupère l'encodage
-		charset = file.split("_")[1];
-		charset = charset.split("\\.")[0];
-
-		// on nettoie le fichier, de manière visuelle
-		cleaner.process(file, charset);
-
-		// On lit le fichier nettoyé
-		final String textHtml = analyser.readFile(file);
-		// On lit le fichier qui va permettre de gerer les réactions
-		analyser.readReac();
-
-		// Création du chemin pour l'enregistrement des informations récupérées
-		final String path = "data"
-				+ file.substring(file.indexOf("/"), file.lastIndexOf("/"))
-				+ "/";
-
-		System.out.println("Récupération des informations ...");
-
-		// Lancement de l'analyse des données
-		analyser.GetData(textHtml);
-
-		System.out.println("Sauvegarde ...");
-
-		// Sauvegarde des données récupérées
-		CSVHandler.saveAll(
-				analyser.dataSeance,
-				path
-						+ "infoSeance"
-						+ File.separator
-						+ file.substring(file.lastIndexOf("/"),
-								file.length() - 5) + ".csv", charset);
-
-	}
 }

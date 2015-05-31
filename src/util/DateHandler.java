@@ -9,7 +9,7 @@ public class DateHandler {
 	public static String dateConverter(String date) {
 		final List<String[]> listMois = CSVHandler.read("Mois.csv", ',',
 				"UTF-8");
-		System.out.println(date);
+		final String[] morceaux = date.split("\\s");
 		final String mois = date.split(" ")[2];
 
 		for (final String[] strings : listMois) {

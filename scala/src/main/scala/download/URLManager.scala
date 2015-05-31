@@ -12,7 +12,7 @@ import scala.io.Source
 
 
   // URLs of the sessions pages
-  private val indexes = for (leg <- 14 to 14) yield (this.prefix + "/" + leg + "/debats/index.asp")
+  private val indexes = for (leg <- 12 to 14) yield (this.prefix + "/" + leg + "/debats/index.asp")
 
 
   // Loads the HTML page pointed by the URL in a string

@@ -24,9 +24,14 @@ public class CSVHandler {
 	}
 
 	/**
+	 * Enregistre des données dans un csv
+	 *
 	 * @param rows
+	 *            le csv à enregistrer
 	 * @param path
+	 *            le chemin de l'endroit où enregistrer les données
 	 * @param charset
+	 *            l'encodage des données à enregistrer
 	 */
 	public static void saveAll(List<String[]> rows, String path, String charset)
 			throws IOException {
@@ -43,6 +48,16 @@ public class CSVHandler {
 
 	}
 
+	/**
+	 * Enregistre une ligne dans un csv
+	 *
+	 * @param rows
+	 *            le csv à enregistrer
+	 * @param path
+	 *            le chemin de l'endroit où enregistrer les données
+	 * @param charset
+	 *            l'encodage des données à enregistrer
+	 */
 	public static void save(String[] row, String path, String charset) {
 		try {
 			final CSVWriter writer = new CSVWriter(new OutputStreamWriter(
@@ -56,8 +71,11 @@ public class CSVHandler {
 	}
 
 	/**
+	 * Lit un csv
+	 * 
 	 * @param path
-	 * @return
+	 *            le chemin du csv à lire
+	 * @return le csv lut sous forme de tableau de string
 	 */
 	public static List<String[]> read(String path, char delim, String charset) {
 
